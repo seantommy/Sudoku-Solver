@@ -15,6 +15,7 @@ namespace Sudoku_Solver
     {
         private int[,] gridContents = new int[9, 9];
         private int[,] mandatoryNumbers = new int[9, 9];
+        private bool[,] numbersAvailable = new bool[10, 10];
 
         public Form1()
         {
@@ -41,8 +42,7 @@ namespace Sudoku_Solver
 
         private void SolvePuzzle()
         {
-            bool[,] numbersAvailable = InitializeNumbersAvailable();
-
+            InitializeNumbersAvailable();
             for (int x = 0; x < 9; x++)
             {
                 for (int y = 0; y < 9; y++)
@@ -53,9 +53,12 @@ namespace Sudoku_Solver
                         {
                             if (numbersAvailable[GetCellBlockNumber(x,y), z] == true)
                             {
-                                dataGrid[x, y].Value = z;
-                                numbersAvailable[GetCellBlockNumber(x, y), z] = false;
-                                break;
+                                if (CheckRowsAndColumns(x, y, z))
+                                {
+                                    dataGrid[x, y].Value = z;
+                                    numbersAvailable[GetCellBlockNumber(x, y), z] = false;
+                                    break;
+                                }
                             }
                         }
                     }
@@ -118,9 +121,8 @@ namespace Sudoku_Solver
             return cellBlock;
         }
 
-        private bool[,] InitializeNumbersAvailable()
+        private void InitializeNumbersAvailable()
         {
-            bool[,] numbersAvailable = new bool[10, 10];
             for(int x = 1; x < 10; x++)
             {
                 for(int y = 1; y < 10; y++)
@@ -141,7 +143,31 @@ namespace Sudoku_Solver
                     }
                 }
             }
-            return numbersAvailable;
+        }
+
+        private bool CheckRowsAndColumns(int x, int y, int value)
+        {
+            bool isValid = true;
+
+            for(int i = 0; i < 9; i++)
+            {
+                if(gridContents[x,i] == value)
+                {
+                    isValid = false;
+                    return isValid;
+                }    
+            }
+            
+            for(int j = 0; j < 9; j++)
+            {
+                if(gridContents[j,y] == value)
+                {
+                    isValid = false;
+                    return isValid;
+                }
+            }
+
+            return isValid;
         }
 
         private void SolveButtonClicked(object sender, EventArgs e)
