@@ -61,7 +61,13 @@ namespace Sudoku_Solver
 
         private void ClearButtonClicked(object sender, EventArgs e)
         {
-
+            for(int x = 0; x < 9; x++)
+            {
+                for(int y = 0; y < 9; y++)
+                {
+                    dataGrid[x, y].Value = null;
+                }
+            }
         }
 
         private void CellValueChanged(object sender, DataGridViewCellEventArgs e)
