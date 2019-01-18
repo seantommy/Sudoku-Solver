@@ -52,13 +52,11 @@ namespace Sudoku_Solver
             DataGridViewCell changedCell = dataGrid.CurrentCell;
             bool numberInput = false;
 
-            Console.WriteLine(changedCell.Value);
             for (int x = 1; x < 10; x++)
             {
                 if (changedCell.Value.ToString() == x.ToString())
                 {
                     numberInput = true;
-                    Console.WriteLine("numberInput = true");
                 }
             }
 
