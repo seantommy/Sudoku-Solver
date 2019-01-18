@@ -13,6 +13,7 @@ namespace Sudoku_Solver
     public partial class Form1 : Form
     {
         private int[,] gridContents = new int[9, 9];
+        private int[,] mandatoryNumbers = new int[9, 9];
 
         public Form1()
         {
@@ -37,9 +38,25 @@ namespace Sudoku_Solver
             }
         }
 
-        private void SolveButtonClicked(object sender, EventArgs e)
+        private void SolvePuzzle()
         {
 
+        }
+
+        private void SolveButtonClicked(object sender, EventArgs e)
+        {
+            for(int x = 0; x < 9; x++)
+            {
+                for(int y = 0; y < 9; y++)
+                {
+                    if(gridContents[x,y] != 0)
+                    {
+                        mandatoryNumbers[x, y] = gridContents[x, y];
+                    }
+                }
+            }
+
+            SolvePuzzle();
         }
 
         private void ClearButtonClicked(object sender, EventArgs e)
@@ -52,30 +69,47 @@ namespace Sudoku_Solver
             DataGridViewCell changedCell = dataGrid.CurrentCell;
             bool numberInput = false;
 
-            for (int x = 1; x < 10; x++)
+            if (changedCell.Value == null)
             {
-                if (changedCell.Value.ToString() == x.ToString())
-                {
-                    numberInput = true;
-                }
-            }
-
-            if (numberInput)
-            {
-                gridContents[changedCell.ColumnIndex, changedCell.RowIndex] = Int16.Parse(changedCell.Value.ToString());
+                gridContents[changedCell.ColumnIndex, changedCell.RowIndex] = 0;
             }
             else
             {
-                if (gridContents[changedCell.ColumnIndex, changedCell.RowIndex] != 0)
+                for (int x = 1; x < 10; x++)
                 {
-                    changedCell.Value = gridContents[changedCell.ColumnIndex, changedCell.RowIndex];
+                    if (changedCell.Value.ToString() == x.ToString())
+                    {
+                        numberInput = true;
+                    }
+                }
+
+                if (numberInput)
+                {
+                    gridContents[changedCell.ColumnIndex, changedCell.RowIndex] = Int16.Parse(changedCell.Value.ToString());
                 }
                 else
                 {
-                    changedCell.Value = "";
+                    if (gridContents[changedCell.ColumnIndex, changedCell.RowIndex] != 0)
+                    {
+                        changedCell.Value = gridContents[changedCell.ColumnIndex, changedCell.RowIndex];
+                    }
+                    else
+                    {
+                        changedCell.Value = "";
+                    }
                 }
             }
 
+        }
+
+        private void KeyPressed(object sender, KeyPressEventArgs e)
+        {
+            DataGridViewCell cell = dataGrid.CurrentCell;
+            string key = e.KeyChar.ToString();
+            if(key == "\b")
+            {
+                cell.Value = null;
+            }
         }
     }
 }
