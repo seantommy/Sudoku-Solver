@@ -78,7 +78,7 @@ namespace Sudoku_Solver
             }
             else
             {
-                PrintGrid();
+                //PrintGrid();
                 numberPlaced = true;
                 if (x < 8)
                 {
@@ -121,24 +121,12 @@ namespace Sudoku_Solver
             {
                 for (int y = 0; y < 9; y++)
                 {
-                    if (dataGrid[y, x].Value != null)
-                    {
-                        Console.Write(" " + dataGrid[y, x].Value.ToString() + " ");
-                    }
-                    else
-                    {
-                        Console.Write("   ");
-                    }
                     if (mandatoryNumbers[x, y] == 0)
                     {
                         dataGrid[x, y].Value = null;
                     }
                 }
-                Console.WriteLine();
             }
-            Console.WriteLine();
-            Console.WriteLine("----------------------------");
-            Console.WriteLine();
         }
 
         private int GetCellBlockNumber(int x, int y)
@@ -293,10 +281,10 @@ namespace Sudoku_Solver
 
         private void CellValueChanged(object sender, DataGridViewCellEventArgs e)
         {
-            if (worker != null && worker.IsAlive)
+            /*if (worker != null && worker.IsAlive)
             {
                 return;
-            }
+            }*/
 
             DataGridViewCell changedCell = dataGrid[e.ColumnIndex, e.RowIndex];
             bool numberInput = false;
