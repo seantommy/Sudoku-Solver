@@ -17,7 +17,8 @@ namespace Sudoku_Solver
         private int[,] gridContents = new int[9, 9];
         private int[,] mandatoryNumbers = new int[9, 9];
         private bool[,] numbersAvailable = new bool[10, 10];
-        private bool userAccessible = true;
+        private Thread worker;
+        //private bool userAccessible = true;
 
         public Form1()
         {
@@ -245,6 +246,11 @@ namespace Sudoku_Solver
 
         private void SolveButtonClicked(object sender, EventArgs e)
         {
+            if (worker != null && worker.IsAlive)
+            {
+                return;
+            }
+
             for (int i = 0; i < 9; i++)
             {
                 for (int j = 0; j < 9; j++)
@@ -261,16 +267,16 @@ namespace Sudoku_Solver
                 }
             }
             InitializeNumbersAvailable();
-            userAccessible = false;
-            Thread worker = new Thread(() => SolvePuzzle(0,0));
+            worker = new Thread(() => SolvePuzzle(0,0));
             worker.Start();
+            //userAccessible = false;
             //SolvePuzzle(0, 0);
-            userAccessible = true;
+            //userAccessible = true;
         }
 
         private void ClearButtonClicked(object sender, EventArgs e)
         {
-            if (!userAccessible)
+            if (worker != null && worker.IsAlive)
             {
                 return;
             }
@@ -287,10 +293,11 @@ namespace Sudoku_Solver
 
         private void CellValueChanged(object sender, DataGridViewCellEventArgs e)
         {
-            if (!userAccessible)
+            if (worker != null && worker.IsAlive)
             {
                 return;
             }
+
             DataGridViewCell changedCell = dataGrid[e.ColumnIndex, e.RowIndex];
             bool numberInput = false;
             if (changedCell.Value == null)
@@ -328,10 +335,11 @@ namespace Sudoku_Solver
 
         private void KeyPressed(object sender, KeyPressEventArgs e)
         {
-            if (!userAccessible)
+            if (worker != null && worker.IsAlive)
             {
                 return;
             }
+
             DataGridViewCell cell = dataGrid.CurrentCell;
             string key = e.KeyChar.ToString();
             if (key == "\b")
@@ -342,7 +350,7 @@ namespace Sudoku_Solver
 
         private void CellBeginEdit(object sender, DataGridViewCellCancelEventArgs e)
         {
-            if (!userAccessible)
+            if (worker != null && worker.IsAlive)
             {
                 dataGrid.CancelEdit();
             }
