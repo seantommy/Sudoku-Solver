@@ -61,6 +61,7 @@
             this.dataGrid.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.CellSelect;
             this.dataGrid.Size = new System.Drawing.Size(700, 700);
             this.dataGrid.TabIndex = 0;
+            this.dataGrid.CellBeginEdit += new System.Windows.Forms.DataGridViewCellCancelEventHandler(this.CellBeginEdit);
             this.dataGrid.CellValueChanged += new System.Windows.Forms.DataGridViewCellEventHandler(this.CellValueChanged);
             this.dataGrid.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.KeyPressed);
             // 

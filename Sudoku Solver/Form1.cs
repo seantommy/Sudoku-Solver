@@ -6,6 +6,7 @@ using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -16,6 +17,7 @@ namespace Sudoku_Solver
         private int[,] gridContents = new int[9, 9];
         private int[,] mandatoryNumbers = new int[9, 9];
         private bool[,] numbersAvailable = new bool[10, 10];
+        private bool userAccessible = true;
 
         public Form1()
         {
@@ -40,31 +42,102 @@ namespace Sudoku_Solver
             }
         }
 
-        private void SolvePuzzle()
+        private bool SolvePuzzle(int x, int y)
         {
-            InitializeNumbersAvailable();
-            for (int x = 0; x < 9; x++)
+            bool numberPlaced = false;
+
+            if (mandatoryNumbers[x, y] == 0)
             {
-                for (int y = 0; y < 9; y++)
+                for (int z = 1; z < 10; z++)
                 {
-                    if (mandatoryNumbers[x, y] == 0)
+                    if (numbersAvailable[GetCellBlockNumber(x, y), z])
                     {
-                        for (int z = 1; z < 10; z++)
+                        if (CheckRowsAndColumns(x, y, z))
                         {
-                            if (numbersAvailable[GetCellBlockNumber(x,y), z] == true)
+                            dataGrid[x, y].Value = z;
+                            numbersAvailable[GetCellBlockNumber(x, y), z] = false;
+                            numberPlaced = true;
+                            if (x < 8)
                             {
-                                if (CheckRowsAndColumns(x, y, z))
-                                {
-                                    dataGrid[x, y].Value = z;
-                                    numbersAvailable[GetCellBlockNumber(x, y), z] = false;
-                                    break;
-                                }
+                                numberPlaced = SolvePuzzle(x + 1, y);
+                            }
+                            else if (y < 8)
+                            {
+                                numberPlaced = SolvePuzzle(0, y + 1);
+                            }
+
+                            if (!numberPlaced)
+                            {
+                                numbersAvailable[GetCellBlockNumber(x, y), z] = true;
+                                dataGrid[x, y].Value = null;
                             }
                         }
                     }
                 }
             }
+            else
+            {
+                PrintGrid();
+                numberPlaced = true;
+                if (x < 8)
+                {
+                    numberPlaced = SolvePuzzle(x + 1, y);
+                }
+                else if (y < 8)
+                {
+                    numberPlaced = SolvePuzzle(0, y + 1);
+                }
+            }
 
+            return numberPlaced;
+        }
+
+        private void PrintGrid()
+        {
+            for (int x = 0; x < 9; x++)
+            {
+                for (int y = 0; y < 9; y++)
+                {
+                    if (dataGrid[y, x].Value != null)
+                    {
+                        Console.Write(" " + dataGrid[y, x].Value.ToString() + " ");
+                    }
+                    else
+                    {
+                        Console.Write("   ");
+                    }
+                }
+                Console.WriteLine();
+            }
+            Console.WriteLine();
+            Console.WriteLine("----------------------------");
+            Console.WriteLine();
+        }
+
+        private void EraseWork()
+        {
+            for (int x = 0; x < 9; x++)
+            {
+                for (int y = 0; y < 9; y++)
+                {
+                    if (dataGrid[y, x].Value != null)
+                    {
+                        Console.Write(" " + dataGrid[y, x].Value.ToString() + " ");
+                    }
+                    else
+                    {
+                        Console.Write("   ");
+                    }
+                    if (mandatoryNumbers[x, y] == 0)
+                    {
+                        dataGrid[x, y].Value = null;
+                    }
+                }
+                Console.WriteLine();
+            }
+            Console.WriteLine();
+            Console.WriteLine("----------------------------");
+            Console.WriteLine();
         }
 
         private int GetCellBlockNumber(int x, int y)
@@ -123,9 +196,9 @@ namespace Sudoku_Solver
 
         private void InitializeNumbersAvailable()
         {
-            for(int x = 1; x < 10; x++)
+            for (int x = 1; x < 10; x++)
             {
-                for(int y = 1; y < 10; y++)
+                for (int y = 1; y < 10; y++)
                 {
                     numbersAvailable[x, y] = true;
                 }
@@ -149,18 +222,18 @@ namespace Sudoku_Solver
         {
             bool isValid = true;
 
-            for(int i = 0; i < 9; i++)
+            for (int i = 0; i < 9; i++)
             {
-                if(gridContents[x,i] == value)
+                if (gridContents[x, i] == value)
                 {
                     isValid = false;
                     return isValid;
-                }    
+                }
             }
-            
-            for(int j = 0; j < 9; j++)
+
+            for (int j = 0; j < 9; j++)
             {
-                if(gridContents[j,y] == value)
+                if (gridContents[j, y] == value)
                 {
                     isValid = false;
                     return isValid;
@@ -172,38 +245,52 @@ namespace Sudoku_Solver
 
         private void SolveButtonClicked(object sender, EventArgs e)
         {
-            for (int x = 0; x < 9; x++)
+            for (int i = 0; i < 9; i++)
             {
-                for (int y = 0; y < 9; y++)
+                for (int j = 0; j < 9; j++)
                 {
-                    if (gridContents[x, y] != 0)
+                    if (gridContents[i, j] != 0)
                     {
-                        mandatoryNumbers[x, y] = gridContents[x, y];
+                        mandatoryNumbers[i, j] = gridContents[i, j];
                     }
                     else
                     {
-                        mandatoryNumbers[x, y] = 0;
-                        dataGrid[x, y].Style.ForeColor = Color.Blue;
+                        mandatoryNumbers[i, j] = 0;
+                        dataGrid[i, j].Style.ForeColor = Color.Blue;
                     }
                 }
             }
-
-            SolvePuzzle();
+            InitializeNumbersAvailable();
+            userAccessible = false;
+            Thread worker = new Thread(() => SolvePuzzle(0,0));
+            worker.Start();
+            //SolvePuzzle(0, 0);
+            userAccessible = true;
         }
 
         private void ClearButtonClicked(object sender, EventArgs e)
         {
+            if (!userAccessible)
+            {
+                return;
+            }
+
             for (int x = 0; x < 9; x++)
             {
                 for (int y = 0; y < 9; y++)
                 {
                     dataGrid[x, y].Value = null;
+                    dataGrid[x, y].Style.ForeColor = SystemColors.ControlText;
                 }
             }
         }
 
         private void CellValueChanged(object sender, DataGridViewCellEventArgs e)
         {
+            if (!userAccessible)
+            {
+                return;
+            }
             DataGridViewCell changedCell = dataGrid[e.ColumnIndex, e.RowIndex];
             bool numberInput = false;
             if (changedCell.Value == null)
@@ -241,11 +328,23 @@ namespace Sudoku_Solver
 
         private void KeyPressed(object sender, KeyPressEventArgs e)
         {
+            if (!userAccessible)
+            {
+                return;
+            }
             DataGridViewCell cell = dataGrid.CurrentCell;
             string key = e.KeyChar.ToString();
             if (key == "\b")
             {
                 cell.Value = null;
+            }
+        }
+
+        private void CellBeginEdit(object sender, DataGridViewCellCancelEventArgs e)
+        {
+            if (!userAccessible)
+            {
+                dataGrid.CancelEdit();
             }
         }
     }
