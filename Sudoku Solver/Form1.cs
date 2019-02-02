@@ -53,21 +53,7 @@ namespace Sudoku_Solver
                 return;
             }
 
-            for (int i = 0; i < 9; i++)
-            {
-                for (int j = 0; j < 9; j++)
-                {
-                    if (gridContents[i, j] != 0)
-                    {
-                        mandatoryNumbers[i, j] = gridContents[i, j];
-                    }
-                    else
-                    {
-                        mandatoryNumbers[i, j] = 0;
-                        dataGrid[i, j].Style.ForeColor = Color.Blue;
-                    }
-                }
-            }
+            SetMandatoryNumbers();
             dataGrid.EditMode = DataGridViewEditMode.EditProgrammatically;
             InitializeNumbersAvailable();
             noSolutionLabel.Visible = false;
@@ -102,35 +88,20 @@ namespace Sudoku_Solver
         private void CellValueChanged(object sender, DataGridViewCellEventArgs e)
         {
             DataGridViewCell changedCell = dataGrid[e.ColumnIndex, e.RowIndex];
-            bool numberInput = false;
+
             if (changedCell.Value == null)
             {
                 gridContents[changedCell.ColumnIndex, changedCell.RowIndex] = 0;
             }
             else
             {
-                for (int x = 1; x < 10; x++)
-                {
-                    if (changedCell.Value.ToString() == x.ToString())
-                    {
-                        numberInput = true;
-                    }
-                }
-
-                if (numberInput)
+                if (IsValidNumberInput(changedCell.Value.ToString()))
                 {
                     gridContents[changedCell.ColumnIndex, changedCell.RowIndex] = Int16.Parse(changedCell.Value.ToString());
                 }
                 else
                 {
-                    if (gridContents[changedCell.ColumnIndex, changedCell.RowIndex] != 0)
-                    {
-                        changedCell.Value = gridContents[changedCell.ColumnIndex, changedCell.RowIndex];
-                    }
-                    else
-                    {
-                        changedCell.Value = "";
-                    }
+                    UndoCellChange(changedCell);
                 }
             }
         }
@@ -172,6 +143,83 @@ namespace Sudoku_Solver
             }
         }
 
+        private bool IsValidNumberInput(string input)
+        {
+            for (int x = 1; x < 10; x++)
+            {
+                if (input == x.ToString())
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private void UndoCellChange(DataGridViewCell changedCell)
+        {
+            if (gridContents[changedCell.ColumnIndex, changedCell.RowIndex] != 0)
+            {
+                changedCell.Value = gridContents[changedCell.ColumnIndex, changedCell.RowIndex];
+            }
+            else
+            {
+                changedCell.Value = "";
+            }
+        }
+
+        private void SetMandatoryNumbers()
+        {
+            for (int i = 0; i < 9; i++)
+            {
+                for (int j = 0; j < 9; j++)
+                {
+                    if (gridContents[i, j] != 0)
+                    {
+                        mandatoryNumbers[i, j] = gridContents[i, j];
+                    }
+                    else
+                    {
+                        mandatoryNumbers[i, j] = 0;
+                        dataGrid[i, j].Style.ForeColor = Color.Blue;
+                    }
+                }
+            }
+        }
+
+        private void InitializeNumbersAvailable()
+        {
+            ClearNumbersAvailable();
+            SetInitialNumbersAvailable();
+        }
+
+        private void ClearNumbersAvailable()
+        {
+            for (int x = 1; x < 10; x++)
+            {
+                for (int y = 1; y < 10; y++)
+                {
+                    numbersAvailable[x, y] = true;
+                }
+            }
+        }
+
+        private void SetInitialNumbersAvailable()
+        {
+            for (int x = 0; x < 9; x++)
+            {
+                for (int y = 0; y < 9; y++)
+                {
+                    int cellBlock = GetCellBlockNumber(x, y);
+
+                    if (mandatoryNumbers[x, y] != 0)
+                    {
+                        numbersAvailable[cellBlock, mandatoryNumbers[x, y]] = false;
+                    }
+                }
+            }
+        }
+
         private void SolvePuzzle()
         {
             solved = AttemptToSolve(0, 0);
@@ -183,55 +231,73 @@ namespace Sudoku_Solver
             {
                 return false;
             }
-            bool numberPlaced = false;
+            bool numberWorks = false;
 
-            if (mandatoryNumbers[x, y] == 0)
+            if (mandatoryNumbers[x, y] == 0) //This cell has no mandatory number.
             {
-                for (int z = 1; z < 10; z++)
+                int numberToTry = 1;
+                while (!numberWorks && numberToTry < 10)
                 {
-                    if (numbersAvailable[GetCellBlockNumber(x, y), z])
-                    {
-                        if (CheckRowsAndColumns(x, y, z))
-                        {
-                            dataGrid[x, y].Value = z;
-                            numbersAvailable[GetCellBlockNumber(x, y), z] = false;
-                            numberPlaced = true;
-                            if (x < 8)
-                            {
-                                numberPlaced = AttemptToSolve(x + 1, y);
-                            }
-                            else if (y < 8)
-                            {
-                                numberPlaced = AttemptToSolve(0, y + 1);
-                            }
-
-                            if (!numberPlaced)
-                            {
-                                numbersAvailable[GetCellBlockNumber(x, y), z] = true;
-                                dataGrid[x, y].Value = null;
-                            }
-                        }
-                    }
+                    numberWorks = TryNumberInCell(numberToTry, x, y);
+                    numberToTry++;
                     if (puzzleSolver.CancellationPending)
                     {
                         return false;
                     }
                 }
             }
-            else
+            else //This cell has a mandatory number
             {
-                numberPlaced = true;
+                numberWorks = true;
                 if (x < 8)
                 {
-                    numberPlaced = AttemptToSolve(x + 1, y);
+                    numberWorks = AttemptToSolve(x + 1, y);
                 }
                 else if (y < 8)
                 {
-                    numberPlaced = AttemptToSolve(0, y + 1);
+                    numberWorks = AttemptToSolve(0, y + 1);
                 }
             }
 
-            return numberPlaced;
+            return numberWorks;
+        }
+
+        private bool TryNumberInCell(int numberToTry, int x, int y)
+        {
+            bool numberWorks = IsNumberValidInCell(numberToTry, x, y);
+            if (numberWorks)
+            {
+                dataGrid[x, y].Value = numberToTry;
+                numbersAvailable[GetCellBlockNumber(x, y), numberToTry] = false;
+                if (x < 8)
+                {
+                    numberWorks = AttemptToSolve(x + 1, y);
+                }
+                else if (y < 8)
+                {
+                    numberWorks = AttemptToSolve(0, y + 1);
+                }
+
+                if (!numberWorks)
+                {
+                    numbersAvailable[GetCellBlockNumber(x, y), numberToTry] = true;
+                    dataGrid[x, y].Value = null;
+                }
+            }
+
+            return numberWorks;
+        }
+
+        private bool IsNumberValidInCell(int numberToTry, int x, int y)
+        {
+            if (numbersAvailable[GetCellBlockNumber(x, y), numberToTry])
+            {
+                if (CheckRowsAndColumns(x, y, numberToTry))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private int GetCellBlockNumber(int x, int y)
@@ -286,30 +352,6 @@ namespace Sudoku_Solver
             }
 
             return cellBlock;
-        }
-
-        private void InitializeNumbersAvailable()
-        {
-            for (int x = 1; x < 10; x++)
-            {
-                for (int y = 1; y < 10; y++)
-                {
-                    numbersAvailable[x, y] = true;
-                }
-            }
-
-            for (int x = 0; x < 9; x++)
-            {
-                for (int y = 0; y < 9; y++)
-                {
-                    int cellBlock = GetCellBlockNumber(x, y);
-
-                    if (mandatoryNumbers[x, y] != 0)
-                    {
-                        numbersAvailable[cellBlock, mandatoryNumbers[x, y]] = false;
-                    }
-                }
-            }
         }
 
         private bool CheckRowsAndColumns(int x, int y, int value)
